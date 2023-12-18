@@ -24,9 +24,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 import rasterio
 from core.evaluation import *
-from core.network import U_Net,R2U_Net,AttU_Net,R2AttU_Net, UNet_Reg
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, median_absolute_error
-import csv
 from torchinfo import summary
 from itertools import product
 from rasterio import windows
