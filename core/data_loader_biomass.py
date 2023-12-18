@@ -124,7 +124,8 @@ class ImageFolder(data.Dataset):
         # root= path to the images already split into train, val
         self.mode = mode
         self.config = config
-        self.GT_paths1 = self.root1 + '../' # for original data
+        self.label_root = self.root1 + '../' # label file in the parent folder of separate data folders
+
         radius = int(self.config.croplength/2)
         self.mask = create_circular_mask(radius*2, radius*2, radius=radius)
 
@@ -151,41 +152,33 @@ class ImageFolder(data.Dataset):
 
 
         if self.config.add_seg:
-            self.seg_paths = seg_path
+            raise NotImplementedError('not implemented yet')
 
-        if self.config.notree:
-            self.GT_dd = pd.read_csv(self.GT_paths1 + mode + '_split_notrees.csv')
         else:
             if config.dk:
-                if not self.config.updated_NFI:
-                    # old dataset trainvaltest split
-                    if self.config.conf_score:
-                        if self.mode != 'test':
-                            if not self.config.mergeTrainValid:
-                                if self.mode == 'train':
-                                    self.GT_dd = pd.read_csv(self.GT_paths1 + mode + '_split_scores_yeardiff_numtreesSameYear.csv')
-                                elif self.mode == 'valid':
-                                    self.GT_dd = pd.read_csv(self.GT_paths1 + mode + '_split_scores_yeardiff_numtreesSameYear2.csv')
-                            else:
-                                #merge train and valid sets
-                                self.GT_dd = pd.read_csv(self.GT_paths1 + 'train_valid_split_scores_yeardiff_numtreesSameYear.csv')
-
-
+                # dk dataset
+                if self.config.conf_score:
+                    if self.mode != 'test':
+                        if not self.config.mergeTrainValid:
+                            if self.mode == 'train':
+                                self.GT_dd = pd.read_csv(self.label_root + mode + '_split_scores_yeardiff_numtreesSameYear.csv')
+                            elif self.mode == 'valid':
+                                self.GT_dd = pd.read_csv(self.label_root + mode + '_split_scores_yeardiff_numtreesSameYear2.csv')
                         else:
-                            # self.GT_dd = pd.read_csv(self.GT_paths + mode + '_split_scores.csv')
-                            # self.GT_dd = pd.read_csv(self.GT_paths + mode + '_split_scores_numtreesSameYear.csv')
-                            self.GT_dd = pd.read_csv(self.GT_paths1 + mode + '_split_scores_numtreesSameYear2.csv') # more even val and test sets
+                            #merge train and valid sets
+                            self.GT_dd = pd.read_csv(self.label_root + 'train_valid_split_scores_yeardiff_numtreesSameYear.csv')
 
 
                     else:
-                        self.GT_dd = pd.read_csv(self.GT_paths1 + mode + '_split.csv')
+                        self.GT_dd = pd.read_csv(self.label_root + mode + '_split_scores_numtreesSameYear2.csv')
+
 
                 else:
-                    # updated NFI data
-                    # trian and test all in csv file, with specific use case (train, test or na)
-                    self.GT_dd = pd.read_csv(self.config.GT_df_path)
+                    self.GT_dd = pd.read_csv(self.label_root + mode + '_split.csv')
+
             else: # not dk
-                self.GT_dd = gps.read_file(self.config.GT_df_path)
+                # self.GT_dd = gps.read_file(self.config.GT_df_path)
+                raise NotImplementedError('not implemented yet')
 
 
 
@@ -193,135 +186,54 @@ class ImageFolder(data.Dataset):
         dd = self.GT_dd[self.GT_dd[self.config.attri_year] >= self.config.year]
         dd = dd[dd[self.config.attri_year] <= self.config.year_end]
 
-        # ipdb.set_trace()
-        if self.config.notree and self.mode == 'train':
-            # only for visualization
-            self.GT_df = dd[[self.config.attri_id, self.config.attri_label, 'notree', self.config.attri_year]]
-        else:
-            # normal case
-            extract_fields = []
-            extract_fields.extend([self.config.attri_id, self.config.attri_label, 'forest_type'])
-            if self.config.conf_score:
-                extract_fields.append(self.config.weight_name)
-            if self.config.add_input2:
-                extract_fields.append(self.config.input2_name)
-            if self.config.updated_NFI:
-                extract_fields.append('useCase')
-            if self.config.correction_score:# the manual scores
-                extract_fields.append(self.config.score_name)
-            if self.config.add_outputs:
-                extract_fields.extend(self.config.add_output_names)
-            if self.config.test_type_separate:
-                extract_fields.append(self.config.test_type_col)
-            # weight for testing: forest fraction
-            if config.dk:
-                extract_fields.append(self.config.test_weight_name)
-            extract_fields.append(self.config.attri_year)
-            extract_fields = list(set(extract_fields))
-            print(extract_fields)
-            self.GT_df = dd[extract_fields]
 
-            if self.config.weight_name == 'forest_frac' and self.config.conf_score and self.config.weight_forest_yesno:
-                # so no 0 weight samples based on forest frac
-                # import ipdb
-                # ipdb.set_trace()
-                self.GT_df.loc[self.GT_df[self.config.weight_name]<=0.1, self.config.weight_name] = 0.1
-                # self.GT_df.loc[self.GT_df[self.weight_name]==np.nan, self.weight_name] = 0.01
+        # normal case
+        extract_fields = []
+        extract_fields.extend([self.config.attri_id, self.config.attri_label, 'forest_type'])
+        if self.config.conf_score:
+            extract_fields.append(self.config.weight_name)
+        if self.config.add_input2:
+            extract_fields.append(self.config.input2_name)
+        if self.config.correction_score:# the manual scores
+            extract_fields.append(self.config.score_name)
+        if self.config.add_outputs:
+            extract_fields.extend(self.config.add_output_names)
+        if self.config.test_type_separate:
+            extract_fields.append(self.config.test_type_col)
+        # weight for testing: forest fraction
+        if config.dk:
+            extract_fields.append(self.config.test_weight_name)
+        extract_fields.append(self.config.attri_year)
+        extract_fields = list(set(extract_fields))
+        print(extract_fields)
+        self.GT_df = dd[extract_fields]
+
+        if self.config.weight_name == 'forest_frac' and self.config.conf_score and self.config.weight_forest_yesno:
+            # so no 0 weight samples based on forest frac
+            # import ipdb
+            # ipdb.set_trace()
+            self.GT_df.loc[self.GT_df[self.config.weight_name]<=0.1, self.config.weight_name] = 0.1
+            # self.GT_df.loc[self.GT_df[self.weight_name]==np.nan, self.weight_name] = 0.01
         self.GT_df = self.GT_df.dropna(subset=[self.config.attri_label])
 
-        # ipdb.set_trace()
-        # for only those weight!=0
-        # print('min', self.GT_df[self.weight_name].min())
-        if not self.config.updated_NFI:
-            if config.dk:
-                self.GT_df = self.GT_df[self.GT_df[self.config.weight_name]!=0]
-            selected_fns = self.GT_df[self.config.attri_id].to_list()
-            self.image_paths0 =  glob.glob(f'{self.root1}/*.tif')
-            if config.dk:
-                self.image_paths = [f for f in self.image_paths0 if os.path.basename(f).split('.')[0] in selected_fns]
-            else:
-                self.image_paths = [f for f in self.image_paths0 if int(os.path.basename(f).split('.')[0]) in selected_fns]
 
-            if self.config.test_type_separate:
-                # ipdb.set_trace()
-                test_list = self.GT_df.loc[self.GT_df[self.config.test_type_col] == self.config.test_type_name, self.config.attri_id].to_list()
-                # self.image_paths =  glob.glob(f'{root}/*.tif')
-                self.image_paths = [f for f in self.image_paths if os.path.basename(f).split('.')[0] in test_list]
+        if config.dk:
+            self.GT_df = self.GT_df[self.GT_df[self.config.weight_name]!=0]
+        selected_fns = self.GT_df[self.config.attri_id].to_list()
+        self.image_paths0 =  glob.glob(f'{self.root1}/*.tif')
+        if config.dk:
+            self.image_paths = [f for f in self.image_paths0 if os.path.basename(f).split('.')[0] in selected_fns]
+        else:
+            self.image_paths = [f for f in self.image_paths0 if int(os.path.basename(f).split('.')[0]) in selected_fns]
 
-            # remove samples in the testing set and also train set
-            self.image_paths = [f for f in self.image_paths if f not in split_list]
+        if self.config.test_type_separate:
+            # ipdb.set_trace()
+            test_list = self.GT_df.loc[self.GT_df[self.config.test_type_col] == self.config.test_type_name, self.config.attri_id].to_list()
+            # self.image_paths =  glob.glob(f'{root}/*.tif')
+            self.image_paths = [f for f in self.image_paths if os.path.basename(f).split('.')[0] in test_list]
 
-
-
-        elif self.config.updated_NFI:
-
-            if self.mode == 'test':
-                # ipdb.set_trace()
-                self.GT_df = self.GT_df[(self.GT_df[self.config.attri_year] >= self.config.test_year_start) & (self.GT_df[self.config.attri_year] <= self.config.test_year_end)]
-
-                if self.config.test_forestOnly:
-                    test_list = self.GT_df.loc[(self.GT_df['useCase']=='test') & (self.GT_df[self.config.test_weight_name]>self.config.test_forestThres), self.config.attri_id].to_list()
-                else: # for all forest and nonforest plots
-                    test_list = self.GT_df.loc[self.GT_df['useCase']=='test', self.config.attri_id].to_list()
-
-                if self.config.test_type_separate:
-                    # ipdb.set_trace()
-                    test_list = self.GT_df.loc[self.GT_df[self.config.test_type_col] == self.config.test_type_name, self.config.attri_id].to_list()
-                self.image_paths =  glob.glob(f'{root}/*.tif')
-                self.image_paths = [f for f in self.image_paths if os.path.basename(f).split('.')[0] in test_list]
-
-                # remove samples in the testing set and also train set
-                self.image_paths = [f for f in self.image_paths if f not in split_list]
-
-
-            else:
-                # for merged train and valid, take randomly splitted train and valid sets
-                self.image_paths =  glob.glob(f'{root}/*.tif')
-                self.image_paths = [f for f in self.image_paths if f in split_list]
-                print('he', len(self.image_paths))
-            if self.config.correction_score:
-                # remove score = 0 samples
-                self.GT_df = self.GT_df[self.GT_df[self.config.score_name]!=0]
-                selected_fns = self.GT_df[self.config.attri_id].to_list()
-                # import ipdb
-                # ipdb.set_trace()
-                # check data balance
-                # reduce non-forest samples for data balance
-                if self.mode != 'test':
-                    po1 = self.GT_df[self.GT_df['useCase']=='train']
-                    train_nonf = int(po1[po1[self.config.attri_label] > 0].count()[self.config.attri_label]*0.01)
-
-                    sel_fns2 = po1.loc[po1[self.config.attri_label]==0, self.config.attri_id].to_list()
-                    try:
-                        reduced_sp = sample(sel_fns2,len(sel_fns2)-train_nonf) # to remove
-                        selected_fns = [f for f in selected_fns if f not in reduced_sp]
-                    except:
-                        print('non-forest samples not enough, not removing any') # if non-forest samples smaller than the expected number of non-forest samples
-
-                    print('after removing non-forest samples', len(selected_fns))
-
-                    cleaned = po1[po1[self.config.attri_id].isin(selected_fns)]
-                    ax = cleaned.plot.hist(column=[self.config.attri_label],bins=100, alpha=0.8)
-                    plt.title('Training & valid data')
-                    plt.show(block=False)
-                else:
-                    if self.config.test_forestOnly:
-                        po2 = self.GT_df[(self.GT_df['useCase']=='test') & (self.GT_df[self.config.test_weight_name]>self.config.test_forestThres)]
-                    else:
-                        po2 = self.GT_df[self.GT_df['useCase']=='test']
-                    ax = po2.plot.hist(column=[self.config.attri_label],bins=100, alpha=0.8)
-                    plt.title('Test set data')
-                    plt.show(block = False)
-
-                # import ipdb
-                # ipdb.set_trace()
-
-
-
-                self.image_paths = [f for f in self.image_paths if os.path.basename(f).split('.')[0] in selected_fns]
-
-
-
+        # remove samples in the testing set and also train set
+        self.image_paths = [f for f in self.image_paths if f not in split_list]
 
         self.RotationDegree = [0,90,180,270]
         if self.mode != 'test':
@@ -339,11 +251,6 @@ class ImageFolder(data.Dataset):
             self.image_paths = [f for f in self.image_paths if os.path.basename(f).split('.')[0] in chm_files]
             print("Aftering double checking chm files, image count in {} path :{}; with years between {} and {}".format(self.mode,len(self.image_paths), self.config.year, self.config.year_end))
 
-        # if self.refine_seg:
-
-        #     self.segmask = create_circular_mask(image_size, image_size, radius=round(croplength/2))
-        # print('gt len', len(self.GT_df))
-
         if type(root)!=str: # if train path has two paths!
             self.root2 = root[1] # new data
             self.GT_paths2 = self.root2 + '../'
@@ -360,9 +267,9 @@ class ImageFolder(data.Dataset):
                     chm_files2 = [os.path.basename(f).split('.')[0] for f in chm_files2]
 
             if self.mode != 'test':
-                self.GT_dd = pd.read_csv(self.GT_paths2 + 'NFIdata2021_LIDAR_scoreFOR2020img.csv')
+                self.GT_dd = pd.read_csv(self.GT_paths2 + '*.csv')
             else:
-                self.GT_dd = pd.read_csv(self.GT_paths2 + 'NFIdata2021_LIDAR.csv')
+                self.GT_dd = pd.read_csv(self.GT_paths2 + '*.csv')
             dd = self.GT_dd[self.GT_dd[self.config.attri_year] >= 2019]
             extract_fields = []
             extract_fields.extend([self.config.attri_id, self.config.attri_label])
@@ -399,12 +306,6 @@ class ImageFolder(data.Dataset):
 
         print('Total count of images: ', len(self.image_paths))
         # print(self.image_paths)
-
-        # # check forest type fraction of each dataset
-        # dd = self.GT_df.drop_duplicates(subset=[self.config.attri_id], keep='first')
-        # # value count of forest type
-        # print('====================Forest type fraction of each dataset====================')
-        # print(dd['forest_type'].value_counts(normalize=True))
 
 
         if self.config.subsample_data:
@@ -574,46 +475,39 @@ class ImageFolder(data.Dataset):
             image = np.concatenate((image, seg), axis=0)
 
 
-        if not self.config.notree: # normal case
-            if self.root1 in image_path: # dataset 1 # ensure sp_weight = True
-                # print('######### dataset 1')
-                GT, sp_weight = get_label_wei(self.config, self.GT_df, filename, self.mode)
-            else: # dataset 2
-                # print('========= dataset 2')
-                GT, sp_weight = get_label_wei(self.config, self.GT_df2, filename, self.mode)
-            if self.config.add_seg and self.config.refine_seg: # add sample confidence score to loss computation
-                notree = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, 'notree'].tolist()
-                if len(notree) != 1:
-                    notree = sum(notree) / len(notree)
+
+        if self.root1 in image_path: # dataset 1 # ensure sp_weight = True
+            # print('######### dataset 1')
+            GT, sp_weight = get_label_wei(self.config, self.GT_df, filename, self.mode)
+        else: # dataset 2
+            # print('========= dataset 2')
+            GT, sp_weight = get_label_wei(self.config, self.GT_df2, filename, self.mode)
+        if self.config.add_seg and self.config.refine_seg: # add sample confidence score to loss computation
+            notree = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, 'notree'].tolist()
+            if len(notree) != 1:
+                notree = sum(notree) / len(notree)
+            else:
+                notree = notree[0]
+
+        if self.config.add_input2:
+            input2 = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, self.config.input2_name].tolist()
+            if len(input2) != 1:
+                input2 = sum(input2) / len(input2)
+            else:
+                input2 = input2[0]
+
+            # use year diff
+            input2 = (2018-input2)/3
+
+        if self.config.add_outputs:
+            add_ops = []
+            for op in range(len(self.config.add_output_names)):
+                output = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, self.config.add_output_names[op]].tolist()
+                if len(output) != 1:
+                    output = sum(output) / len(output)
                 else:
-                    notree = notree[0]
-
-            if self.config.add_input2:
-                input2 = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, self.config.input2_name].tolist()
-                if len(input2) != 1:
-                    input2 = sum(input2) / len(input2)
-                else:
-                    input2 = input2[0]
-
-                # use year diff
-                input2 = (2018-input2)/3
-
-            if self.config.add_outputs:
-                add_ops = []
-                for op in range(len(self.config.add_output_names)):
-                    output = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, self.config.add_output_names[op]].tolist()
-                    if len(output) != 1:
-                        output = sum(output) / len(output)
-                    else:
-                        output = output[0]
-                    add_ops.append(output)
-
-        else: # two labels, for check only
-            GT = self.GT_df.loc[self.GT_df[self.config.attri_id]==filename, [self.config.attri_label, 'notree', attri_year]]
-            GT = GT[GT[self.config.attri_label]==GT[self.config.attri_label].max()]
-            if len(GT) != 1:
-                GT = GT.iloc[0] # in case two rows are the same
-            GT = np.squeeze(GT.values) # array of size 2
+                    output = output[0]
+                add_ops.append(output)
 
 
         # crop here, now channel first
@@ -762,48 +656,9 @@ class ImageFolder(data.Dataset):
             drop = FeatureAlphaDropout(p=self.config.dropoutchannel_ratio)
             image_crop = drop(image_crop)
 
-        # if self.config.circle_crop:
-        #
-        #     rad2 = int(self.config.inputlength/2)
-        #     mask2 = create_circular_mask(rad2*2, rad2*2, radius=rad2)
-        #     mask2 = torch.from_numpy(mask2)
-        #     image_crop[:, ~mask2] = 0
-        # keep 0 for corners
-        # image_crop = image_crop.numpy()
-        # if self.config.circle_crop:
-        #
-        #     rad2 = int(self.config.inputlength/2)
-        #     mask2 = create_circular_mask(rad2*2, rad2*2, radius=rad2)
-        #     mask2 = torch.from_numpy(mask2)
-        #     image_crop[:, ~mask2] = 0
-
-        # image_crop = torch.from_numpy(image_crop)
-        # # be careful here!, after totensor the values are in (0,1)
-        # means = torch.mean(image, (1,2))
-        # stds = torch.std(image, (1, 2))
-        # # print(means.shape)
-        # Norm_ = T.Normalize(means, stds)
-        # image = Norm_(image)
-
-
-
 
         GT = torch.tensor(GT)
         if self.config.conf_score:
-            # if self.add_seg and self.refine_seg:
-            #     # check segcount compared with recorded count
-            #     # notree: recorded trees
-            #     # segcount: count from seg
-            #     diff = abs(notree-segcount)
-            #     if diff > 11: # 11 is based on simple regression., 80% abs error
-            #         # if two far away, reduce the sample weight more
-            #         sp_weight  = sp_weight*0.5
-            #         # print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-            #         # print(sp_weight)
-
-            # add weight to high GT samples
-            # if GT.item() >= 200:
-            #     sp_weight = sp_weight*5
 
             sp_weight = torch.tensor(sp_weight)
             if self.config.add_input2:

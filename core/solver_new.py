@@ -13,9 +13,7 @@ import torch.nn as nn
 from PIL import Image
 import random
 from core.evaluation import *
-from core.network import U_Net,R2U_Net,AttU_Net,R2AttU_Net, UNet_Reg
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, median_absolute_error, precision_score, recall_score, accuracy_score, f1_score
-import csv
 import cv2
 from torchinfo import summary
 import wandb
@@ -89,49 +87,6 @@ class Effnet_2inputs(nn.Module):
 
 
         return c3
-
-
-class Effnet_3outputs_AGB_B_C(nn.Module):
-    # efficientnet with 3 outputs
-    # AGB: biomass
-    # B broadleaved fraction
-    # C coniferous fraction
-    def __init__(self, net):
-        super(Effnet_3outpuefficientb0ts_AGB_B_C,self).__init__()
-
-        self.im_features = nn.Sequential(*list(net.features.children()), net.avgpool)
-        num_feat = self.im_features[-2][0].out_channels
-        self.dropout = nn.Dropout(p=0.2)
-
-        self.dense0 = nn.Linear(in_features=1280, out_features=640, bias=True)
-        # branches having equal dim
-        self.dense1 = nn.Linear(in_features=640, out_features=320, bias=True)
-        self.dense2 = nn.Linear(in_features=320, out_features=64, bias=True)
-        self.dense3 = nn.Linear(in_features=64, out_features=1, bias=True)
-
-
-
-    def forward(self, img):
-
-        f1 = self.im_features(img) # feature extracted from image branch # 32, 1280
-        f1 = f1.view(f1.size(0), -1) #(32, 1280, 1, 1) to (32, 1280)
-        f2 = self.dense0(f1) # 32, 640
-        f2 = self.dropout(f2)
-        im1 = self.dense1(f2) # 32, 320
-        im1 = self.dropout(im1)
-        im2 = self.dense2(im1) #32, 64
-        im2 = self.dropout(im2)
-        im3 = self.dense3(im2) #32, 1
-
-        bfr1 = self.dense2(im1) #32, 64
-        bfr1 = self.dropout(bfr1)
-        bfr2 = self.dense3(bfr1) #32, 1
-
-        cfr1 = self.dense2(im1) #32, 64
-        cfr1 = self.dropout(cfr1)
-        cfr2 = self.dense3(cfr1) #32, 1
-
-        return im3, bfr2, cfr2
 
 
 
@@ -474,25 +429,6 @@ class Solver(object):
         resume=0,
         )
 
-        # # Create model and datasets
-        # if not self._checkpoint.is_empty:
-        #     self._dataset: BaseDataset = instantiate_dataset(self._checkpoint.data_config)
-        #     self._model: BaseModel = self._checkpoint.create_model(
-        #         self._dataset, weight_name=self._cfg.training.weight_name
-        #     )
-        # else:
-        #     self._dataset: BaseDataset = instantiate_dataset(self._cfg.data)
-        #     self._model: BaseModel = instantiate_model(copy.deepcopy(self._cfg), self._dataset)
-        #     self._model.instantiate_optimizers(self._cfg, "cuda" in device)
-        #     self._model.set_pretrained_weights()
-        #     if not self._checkpoint.validate(self._dataset.used_properties):
-        #         log.warning(
-        #             "The model will not be able to be used from pretrained weights without the corresponding dataset. Current properties are {}".format(
-        #                 self._dataset.used_properties
-        #             )
-        #         )
-        # self._checkpoint.dataset_properties = self._dataset.used_properties
-# getattrders
         if launch_wandb:
             Wandb.launch(config, cfg_path, 1)
 # =============================================================================
@@ -503,28 +439,14 @@ class Solver(object):
 
     def build_model(self):
         """Build generator and discriminator."""
-        if self.model_type =='U_Net':
-            self.nnet = U_Net(img_ch=self.img_ch,output_ch=self.output_ch)
-        elif self.model_type == 'UNet_Reg': # regression unet
-            self.nnet = UNet_Reg(img_ch=self.img_ch,output_ch=self.output_ch, level = self.nnlevel) # output_ch = scalar
-        elif self.model_type =='R2U_Net':
-            self.nnet = R2U_Net(img_ch=self.img_ch,output_ch=self.output_ch,t=self.t)
-        elif self.model_type =='AttU_Net':
-            self.nnet = AttU_Net(img_ch=self.img_ch,output_ch=self.output_ch)
-        elif self.model_type == 'R2AttU_Net':
-            self.nnet = R2AttU_Net(img_ch=self.img_ch,output_ch=self.output_ch,t=self.t)
-        elif 'torchEfficientnetb0' in self.model_type:
+        if 'torchEfficientnetb0' in self.model_type:
             if self.config.task == 'classification':
-                print('regression')
-
+                raise NotImplementedError
 
             elif self.config.task == 'regression':
                 if not self.pretrained:
                     self.nnet = models.efficientnet_b0(num_classes=self.output_ch)
                     self.nnet.features[0][0] = nn.Conv2d(self.img_ch, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                    # # self.nnet.features[2][0].block[1][0] = nn.Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False)
-                    # self.nnet.features[-1][0] = nn.Conv2d(320, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                    # self.nnet.features[-1][1] = nn.BatchNorm2d(480, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                     num_fs = self.nnet.classifier[1].in_features
                     self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
                                                         nn.Linear(in_features=num_fs, out_features=640, bias=True),
@@ -535,7 +457,7 @@ class Solver(object):
                                                         )
 
 
-                # try generating a map instead
+                # generating a map instead
                 else: # load pretrained, only reini the final layer
                     if 'dense' in self.model_type:
                         # load pretrained, only reini the final layer
@@ -547,30 +469,17 @@ class Solver(object):
                             # add input 2
                             self.nnet = Effnet_2inputs(net0)
 
-                        elif self.add_outputs:
-                            self.nnet = Effnet_3outputs(net0)
+
                         else:
                             # shrink regression output
                             self.nnet = net0
-                            if self.config.updated_NFI:
-                                self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=num_fs, out_features=640, bias=True),
-                                                                    nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=640, out_features=320, bias=True),
-                                                                    nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=320, out_features=64, bias=True),
-                                                                    nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=64, out_features=1, bias=True))
-
-                            # the non-updated verison of the model
-                            else:
-                                self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=num_fs, out_features=640, bias=True),
-                                                                    nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=640, out_features=320, bias=True),
-                                                                    nn.Dropout(p=0.2),
-                                                                    nn.Linear(in_features=320, out_features=1, bias=True),
-                                                                    )
+                            self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
+                                                                nn.Linear(in_features=num_fs, out_features=640, bias=True),
+                                                                nn.Dropout(p=0.2),
+                                                                nn.Linear(in_features=640, out_features=320, bias=True),
+                                                                nn.Dropout(p=0.2),
+                                                                nn.Linear(in_features=320, out_features=1, bias=True),
+                                                                )
 
 
 
@@ -612,14 +521,6 @@ class Solver(object):
 
                             # shrink regression output
                             self.nnet = net0
-                            # self.nnet.features[-1][0] = nn.Conv2d(320, 640, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                            # self.nnet.features[-1][1] = nn.BatchNorm2d(640, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                            # self.nnet.features.append(nn.Conv2d(640, 320, kernel_size=(1, 1), stride=(1, 1), bias=False))
-                            # self.nnet.features.append(nn.BatchNorm2d(320, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True))
-                            # self.nnet.features.append(nn.Conv2d(320, 64, kernel_size=(1, 1), stride=(1, 1), bias=False))
-                            # self.nnet.features.append(nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True))
-                            # self.nnet.features.append(nn.Conv2d(64, 1, kernel_size=(1, 1), stride=(1, 1), bias=False))
-
                             self.nnet.features[-4] = torch.nn.Sequential(nn.Conv2d(80, 64, kernel_size=(1, 1), stride=(1, 1), bias=False),
                                                         nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True))
                             self.nnet.features[-3] = torch.nn.Sequential(nn.Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False),
@@ -1757,8 +1658,6 @@ class Solver(object):
         # self.publish_to_tensorboard(metrics, step)
 
 
-        self._checkpoint.save_best_models_under_current_metrics(self.nnet, metrics)
-        Wandb.add_file(self._checkpoint.checkpoint_path)
 
         wandb.config.update({"model_name": self.config.model_type})
 
@@ -1783,10 +1682,6 @@ class Solver(object):
 
 
         # self.publish_to_tensorboard(metrics, step)
-
-
-        self._checkpoint.save_best_models_under_current_metrics(self.nnet, metrics)
-        Wandb.add_file(self._checkpoint.checkpoint_path)
 
         wandb.config.update({"model_name": self.config.model_type})
 

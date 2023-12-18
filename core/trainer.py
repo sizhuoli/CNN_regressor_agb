@@ -55,52 +55,30 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
     # if merged train and valid, need to split first
     if config.mergeTrainValid:
         if config.task == 'regression':
-            if not config.updated_NFI:
-                GT_dd = pd.read_csv(config.train_path + '../train_valid_split_scores_yeardiff_numtreesSameYear.csv')
-                print('GTdd', len(GT_dd))
-                dd = GT_dd[GT_dd['year'] >= config.year]
-                print('step1', len(dd))
-                dd = dd[dd[config.weight_name]!=0]
-                print('step2', len(dd))
-                selected_fns = dd['psussu'].to_list()
-                all_files = glob.glob(f'{config.train_path}/*.tif')
-                print('all', len(all_files))
-                image_paths = [f for f in all_files if os.path.basename(f).split('.')[0] in selected_fns]
-                print('sel', len(image_paths))
-                train_list, valid_list = train_test_split(image_paths, test_size=1-config.split_ratio)
-                print('train', len(train_list), len(valid_list))
-                timestr = time.strftime("%Y%m%d-%H%M")
-                json_file = config.train_path + '../trainValid_split/' + 'split_' + timestr + '_split_' + str(int(config.split_ratio*10)) + '.json'
-                data = {}
-                data['training'] = train_list
-                data['validation'] = valid_list
-                data['num_train'] = len(train_list)
-                data['num_valid'] = len(valid_list)
-                data['train_ratio'] = config.split_ratio
-                with open(json_file, 'w') as file:
-                    json.dump(data, file)
-            else:
-                # new dataset
-                GT_dd = pd.read_csv(config.train_path + '../NFIdata2021_LIDAR_scores_traintest.csv')
-                print('GTdd', len(GT_dd))
-                selected_fns = GT_dd.loc[(GT_dd['year']>=config.year)&(GT_dd['useCase']=='train'), 'psussu'].to_list()
-                print('sel len', len(set(selected_fns)))
-                all_files = glob.glob(f'{config.train_path}/*.tif')
-                print('all', len(all_files))
-                image_paths = [f for f in all_files if os.path.basename(f).split('.')[0] in selected_fns]
-                print('sel', len(image_paths))
-                train_list, valid_list = train_test_split(image_paths, test_size=1-config.split_ratio)
-                print('train', len(train_list), len(valid_list))
-                timestr = time.strftime("%Y%m%d-%H%M")
-                json_file = config.train_path + '../trainValid_split/' + 'split_' + timestr + '_split_' + str(int(config.split_ratio*10)) + '.json'
-                data = {}
-                data['training'] = train_list
-                data['validation'] = valid_list
-                data['num_train'] = len(train_list)
-                data['num_valid'] = len(valid_list)
-                data['train_ratio'] = config.split_ratio
-                with open(json_file, 'w') as file:
-                    json.dump(data, file)
+            GT_dd = pd.read_csv(config.train_path + '../train_valid_split_scores_yeardiff_numtreesSameYear.csv')
+            print('GTdd', len(GT_dd))
+            dd = GT_dd[GT_dd['year'] >= config.year]
+            print('step1', len(dd))
+            dd = dd[dd[config.weight_name]!=0]
+            print('step2', len(dd))
+            selected_fns = dd['psussu'].to_list()
+            all_files = glob.glob(f'{config.train_path}/*.tif')
+            print('all', len(all_files))
+            image_paths = [f for f in all_files if os.path.basename(f).split('.')[0] in selected_fns]
+            print('sel', len(image_paths))
+            train_list, valid_list = train_test_split(image_paths, test_size=1-config.split_ratio)
+            print('train', len(train_list), len(valid_list))
+            timestr = time.strftime("%Y%m%d-%H%M")
+            json_file = config.train_path + '../trainValid_split/' + 'split_' + timestr + '_split_' + str(int(config.split_ratio*10)) + '.json'
+            data = {}
+            data['training'] = train_list
+            data['validation'] = valid_list
+            data['num_train'] = len(train_list)
+            data['num_valid'] = len(valid_list)
+            data['train_ratio'] = config.split_ratio
+            with open(json_file, 'w') as file:
+                json.dump(data, file)
+
 
         elif config.task == 'classification':
             GT_dd = pd.read_csv(config.classification_label_fn)
@@ -132,13 +110,11 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
                 json.dump(data, file)
 
         else:
-            print('task invalid')
+            raise ValueError('wrong task type')
 
 
     else:
         train_list = valid_list = []
-
-
 
     train_loader = get_loader(image_path=config.train_path, config = config,
                             split_list = train_list,
@@ -187,14 +163,14 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
     if config.mode == 'train':
         print('Checking training data')
 
-        images = data_vis(train_loader, config.notree, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), twoinput = config.add_input2, outputs = config.add_outputs)
+        images = data_vis(train_loader, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), twoinput = config.add_input2, outputs = config.add_outputs)
 
         print('Checking validation data')
-        _ = data_vis(valid_loader, config.notree, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), twoinput = config.add_input2, outputs = config.add_outputs)
+        _ = data_vis(valid_loader, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), twoinput = config.add_input2, outputs = config.add_outputs)
 
     else:
 
-        images = data_vis(test_loader, config.notree, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), num = 1 , test_vis=config.test_vis)
+        images = data_vis(test_loader, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), num = 1 , test_vis=config.test_vis)
         # images = data_vis(test_loader, config.notree, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, num = 1, model = solver.nnet, devi = solver.device, test = 1)
         print('***')
     if config.add_input2:
@@ -228,7 +204,7 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
                 ppd, gtt, gtts, preds, mae, r2, mse, rte = solver.test()
         if config.mode == 'test':
             print('Checking testign data')
-            images = data_vis(test_loader, config.notree, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), num = 1, model = solver.nnet, devi = solver.device, test = 1, test_vis = config.test_vis)
+            images = data_vis(test_loader, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), num = 1, model = solver.nnet, devi = solver.device, test = 1, test_vis = config.test_vis)
             # if config.showmap:
             #     map_vis(config, test_loader, config.notree, config.conf_score, config.use_color, num = 1, model = solver.nnet, devi = solver.device, test = 1)
 
@@ -242,7 +218,7 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
     else:
         return
 
-def data_vis(loader, notree, conf_score, use_color, add_chm, add_seg, add_activ_loss_descend, num = 3, model = '', devi = '', test = 0, twoinput = 0, outputs = 0, test_vis = 0):
+def data_vis(loader, conf_score, use_color, add_chm, add_seg, add_activ_loss_descend, num = 3, model = '', devi = '', test = 0, twoinput = 0, outputs = 0, test_vis = 0):
     # for _ in range(num):
     for itt, data in enumerate(loader):
         if itt < num:
@@ -267,9 +243,10 @@ def data_vis(loader, notree, conf_score, use_color, add_chm, add_seg, add_activ_
 
                 #     images, labels, chm_activ, sp_wei = next(dataiter)
                 else:
-
-                    # images, labels, chm_activ, sp_wei = data
-                    images, labels, sp_wei = data
+                    try: # add activ visulization
+                        images, labels, chm_activ, sp_wei = data
+                    except:
+                        images, labels, sp_wei = data
                 # ipdb.set_trace()
                 sp_wei = sp_wei.numpy()
             labels = labels.numpy()
@@ -515,7 +492,8 @@ def data_vis(loader, notree, conf_score, use_color, add_chm, add_seg, add_activ_
                                     else:
                                         plt.title(str(labels[j]))
                             plt.colorbar()
-                            plt.show(block=False)
+                            # plt.show(block=False)
+                            plt.show()
             except:
                 continue
                 print('skipping')
