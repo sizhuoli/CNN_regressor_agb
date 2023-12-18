@@ -1,44 +1,41 @@
-##  Image regression / classification
+##  Image-patch-level regression
 
-----------------------------------------
 
-### Set up conda enviroment
+### 0. Set up conda enviroment
 
 ```
 conda env create -f environment_pytorch_cnn_regressor.yml
 
 ```
 
-----
 
 
-### Train a regression model with regression head design A (fully connect layers after global pooling)
+### 1.0 Train a regression model with regression head design A (fully connect layers after global pooling)
 
 ```
 
 python main_training.py --head A
 
 ```
-#### Set configs in conf/config_training_regression_head_A-dense-design.yaml
-
-----
+#### 1.0.0 Set configs in conf/config_training_regression_head_A-dense-design.yaml
 
 
-### Train a regression model with regression head design B (activation map)
+
+### 1.1 Train a regression model with regression head design B (activation map)
 
 ```
 
 python main_training.py --head B
 
 ```
-#### Set configs in conf/config_training_regression-head-B-map-design.yaml
+#### 1.1.0 Set configs in conf/config_training_regression-head-B-map-design.yaml
 
 ----
 
 
 
 
-#### Data format
+#### 1.2 Data format
 
 Each image file is saved as a tiff located in dataset/train/ or dataset/valid/ or dataset/test/
 
@@ -55,7 +52,7 @@ E.g. image tiff file may have a file name '6531C.tif'
 
 ----------------------------------------
 
-### Large scale inference using a trained regression model
+### 2. Large scale inference using a trained regression model
 
 ```
 
@@ -63,16 +60,6 @@ python inference_run.py
 
 ```
 
-#### Set configs in conf/config_inference_rgb.yaml
+#### 2.0 Set configs in conf/config_inference_rgb.yaml
 
-----------------------------------------
 
-### Train a classification model
-
-```
-
-python main_classification.py
-
-```
-
-#### Set configs in conf/config_classification.yaml
