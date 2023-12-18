@@ -349,17 +349,7 @@ class Predictor:
 
     def build_model(self):
         """Build generator and discriminator."""
-        if self.model_type == 'U_Net':
-            self.nnet = U_Net(img_ch=self.img_ch, output_ch=self.output_ch)
-        elif self.model_type == 'UNet_Reg':  # regression unet
-            self.nnet = UNet_Reg(img_ch=self.img_ch, output_ch=self.output_ch, level=self.nnlevel)  # output_ch = scalar
-        elif self.model_type == 'R2U_Net':
-            self.nnet = R2U_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
-        elif self.model_type == 'AttU_Net':
-            self.nnet = AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch)
-        elif self.model_type == 'R2AttU_Net':
-            self.nnet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
-        elif 'torchEfficientnetb0' in self.model_type:
+        if 'torchEfficientnetb0' in self.model_type:
             if self.config.task == 'classification':
                 # use default arch
                 self.nnet = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
