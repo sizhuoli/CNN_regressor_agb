@@ -412,32 +412,17 @@ class Predictor:
                         else:
                             # shrink regression output
                             self.nnet = net0
-                            if self.config.updated_NFI:
-                                self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=num_fs,
-                                                                                     out_features=640, bias=True),
-                                                                           nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=640, out_features=320,
-                                                                                     bias=True),
-                                                                           nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=320, out_features=64,
-                                                                                     bias=True),
-                                                                           nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=64, out_features=1,
-                                                                                     bias=True))
 
-                            # the non-updated verison of the model
-                            else:
-                                self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=num_fs,
-                                                                                     out_features=640, bias=True),
-                                                                           nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=640, out_features=320,
-                                                                                     bias=True),
-                                                                           nn.Dropout(p=0.2),
-                                                                           nn.Linear(in_features=320, out_features=1,
-                                                                                     bias=True),
-                                                                           )
+                            self.nnet.classifier = torch.nn.Sequential(nn.Dropout(p=0.2),
+                                                                       nn.Linear(in_features=num_fs,
+                                                                                 out_features=640, bias=True),
+                                                                       nn.Dropout(p=0.2),
+                                                                       nn.Linear(in_features=640, out_features=320,
+                                                                                 bias=True),
+                                                                       nn.Dropout(p=0.2),
+                                                                       nn.Linear(in_features=320, out_features=1,
+                                                                                 bias=True),
+                                                                       )
 
 
 
