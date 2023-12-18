@@ -2,6 +2,16 @@
 
 ----------------------------------------
 
+### Set up conda enviroment
+
+```
+conda env create -f environment_pytorch_cnn_regressor.yml
+
+```
+
+----
+
+
 ### Train a regression model with regression head design A (fully connect layers after global pooling)
 
 ```
