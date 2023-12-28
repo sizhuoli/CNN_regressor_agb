@@ -308,7 +308,6 @@ class Solver(object):
 
         self.loss_name = config.loss_name
         self.augmentation_prob = config.augmentation_prob
-        self.nnlevel = config.nnlevel
         # Hyper-parameters
         self.lr = config.lr
         self.beta1 = config.beta1

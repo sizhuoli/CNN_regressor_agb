@@ -52,7 +52,25 @@ E.g. image tiff file may have a file name '6531C.tif'
 
 ----------------------------------------
 
-### 2. Large scale inference using a trained regression model
+### 2. Evaluate trained model on the test data
+
+```
+python test_scores.py
+```
+
+#### 2.0 Set configs in conf/config_testscore_rgb.yaml
+
+For evaluating models trained using only RGB bands
+
+* Default settings for map design (design B)
+
+* Need to change model architecture and add_... in configs for dense design (design A)
+
+
+----
+
+
+### 3. Large scale inference using a trained regression model
 
 ```
 
@@ -60,6 +78,6 @@ python inference_run.py
 
 ```
 
-#### 2.0 Set configs in conf/config_inference_rgb.yaml
+#### 3.0 Set configs in conf/config_inference_rgb.yaml
 
 
