@@ -65,7 +65,7 @@ min_lr: 1.0e-05
 mode: train
 model_path: /home/sizhuo/Desktop/code_repository/CNN_AGB/saved_models/test/
 model_suf: None
-model_type: torchEfficientnetb0_map
+model_type: torchEfficientnetb1_map
 nir_rep_red: 0
 nnlevel: 4
 norm_wei: 1

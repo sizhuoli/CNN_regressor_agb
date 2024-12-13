@@ -4,8 +4,11 @@ import time
 import datetime
 
 import pandas as pd
+import rasterio
 import torch
 import torchvision
+from rope.base.libutils import relative
+from sphinx.addnodes import seealso
 from torch import optim
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -283,6 +286,14 @@ def alpha_loss(loss, alpha = 200):
     alpha_set = loss>alpha
     return loss*(alpha_set+1) # double loss for larger values
 
+def enable_dropout(model):
+    """
+    Enable the dropout layers during inference -- MC dropout
+    """
+    for module in model.modules():
+        if isinstance(module, nn.Dropout):
+            print('&&&&&&&&&&&&&&&&&&&enabling dropout')
+            module.train()
 
 class Solver(object):
     def __init__(self, config, train_loader, valid_loader, test_loader, patch_size, cfg_path, launch_wandb=1):
@@ -396,21 +407,22 @@ class Solver(object):
         else:
             print('invalid band setting: check!')
         # ipdb.set_trace()
-        if config.task == 'regression':
+        if config.mode == 'train' or config.mode == 'train_transfer':
+            if config.task == 'regression':
 
-            if self.config.resume_train:
-                self.nnet_path_dir = self.config.model_path
-                # ipdb.set_trace()
-            else:
-                self.nnet_path_dir = os.path.join(self.model_path, 'AGB_%s-%s-Epo%d-yearAft_%d-patch_%d-Loss_%s-bands_%s-_%s' %(timestr, self.model_type,self.num_epochs,int(self.year), ps, self.loss_name, self.bandns, self.suf))
+                if self.config.resume_train:
+                    self.nnet_path_dir = self.config.model_path
+                    # ipdb.set_trace()
+                else:
+                    self.nnet_path_dir = os.path.join(self.model_path, 'AGB_%s-%s-Epo%d-yearAft_%d-patch_%d-Loss_%s-bands_%s-_%s' %(timestr, self.model_type,self.num_epochs,int(self.year), ps, self.loss_name, self.bandns, self.suf))
 
-        elif config.task == 'classification':
-            self.nnet_path_dir = os.path.join(self.model_path, 'classification_%s-%s-Epo%d-patch_%d-Loss_%s-bands_%s-_%s' %(timestr, self.model_type,self.num_epochs, ps, self.loss_name, self.bandns, self.suf))
+            elif config.task == 'classification':
+                self.nnet_path_dir = os.path.join(self.model_path, 'classification_%s-%s-Epo%d-patch_%d-Loss_%s-bands_%s-_%s' %(timestr, self.model_type,self.num_epochs, ps, self.loss_name, self.bandns, self.suf))
 
-        print('********************************************')
-        print('Model path: ', self.nnet_path_dir)
-        if self.mode == 'train' and not os.path.exists(self.nnet_path_dir):
-            os.makedirs(self.nnet_path_dir)
+            print('********************************************')
+            print('Model path: ', self.nnet_path_dir)
+            if not os.path.exists(self.nnet_path_dir):
+                os.makedirs(self.nnet_path_dir)
 # =============================================================================
         self.saveImages = config.saveImages
         if self.saveImages:
@@ -737,23 +749,23 @@ class Solver(object):
 
         else: # using pretrained model
             params_to_update = self.nnet.parameters()
-            print("Params to learn:")
+            # print("Params to learn:")
 
             params_to_update = []
             for name,param in self.nnet.named_parameters():
                 if param.requires_grad == True:
                     params_to_update.append(param)
-                    print("\t",name)
+                    # print("\t",name)
 
 
             # Observe that all parameters are being optimized
             self.optimizer = optim.Adam(params_to_update, self.lr, [self.beta1, self.beta2], self.weightDecay)
 
-
-
+        # ipdb.set_trace()
         self.nnet.to(self.device)
 
-        self.print_network(self.nnet, self.model_type)
+        if self.config.mode == 'train' or self.config.mode == 'train_transfer':
+            self.print_network(self.nnet, self.model_type)
         # ipdb.set_trace()
 
 
@@ -774,7 +786,7 @@ class Solver(object):
         else:
             model_stats = summary(model, input_size=self.patch_size, col_names = ("input_size", "output_size", "num_params"))
         # model_stats = summary(model, input_size=(32, 3, 180, 180))
-        print(model_stats)
+        # print(model_stats)
         print("The number of trainable parameters: {}".format(num_params))
         self.summary_str = str(model_stats)
 
@@ -1960,21 +1972,27 @@ class Solver(object):
 
 
 
-    def bias_correction(self, train_val_loader, val_val_loader):
-        # using the training set to find b* and val set to validate
-        if os.path.isfile(self.model_path):
-            # Load the pretrained Encoder
-            if self.model_path.endswith('pt'):
-                checkpoint = torch.load(self.model_path, map_location='cuda:0')
-                # ipdb.set_trace()
-                self.nnet.load_state_dict(checkpoint['model_state_dict'])
-            else:
-                self.nnet.load_state_dict(torch.load(self.model_path, map_location='cuda:0'))
-            print('%s is Successfully Loaded from %s'%(self.model_type,self.model_path))
-        
-        
+    def load_model_for_test(self):
+        # ipdb.set_trace()
+        if not self.model_path:
+            from core.model_paths import prepare_saved_model
+            self.model_path = prepare_saved_model(self.config.model_type)
+
+        # Load the pretrained Encoder
+        if self.model_path.endswith('pt'):
+            checkpoint = torch.load(self.model_path, map_location='cuda:0')
+            # ipdb.set_trace()
+            self.nnet.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            self.nnet.load_state_dict(torch.load(self.model_path, map_location='cuda:0'))
+        print('%s is Successfully Loaded from %s' % (self.model_type, self.model_path))
+        # ipdb.set_trace()
         self.nnet.train(False)
         self.nnet.eval()
+
+    def bias_correction(self, train_val_loader, val_val_loader):
+
+        self.load_model_for_test()
 
         val_losses = AverageMeter()
         val_rmse = AverageMeter()
@@ -2221,21 +2239,7 @@ class Solver(object):
 
     def test(self):
         #===================================== Test ====================================#
-        # after all training epochs
-        # self.build_model()
-        if os.path.isfile(self.model_path):
-            # Load the pretrained Encoder
-            if self.model_path.endswith('pt'):
-                checkpoint = torch.load(self.model_path, map_location='cuda:0')
-                # ipdb.set_trace()
-                self.nnet.load_state_dict(checkpoint['model_state_dict'])
-            else:
-                self.nnet.load_state_dict(torch.load(self.model_path, map_location='cuda:0'))
-            print('%s is Successfully Loaded from %s'%(self.model_type,self.model_path))
-
-        self.nnet.train(False)
-        self.nnet.eval()
-
+        self.load_model_for_test()
         lb_list = []
         pd_list = []
         images_list = []
@@ -2378,7 +2382,7 @@ class Solver(object):
         
         plot_resi(np.array(pd_list), np.array(lb_list))
 
-        print('---------------------------On the test set Before bias correction-----------------------------')
+        print('---------------------------On the test set Before bias correction (raw prediction) -----------------------------')
         ppd = np.array(pd_list)
         ggt = np.array(lb_list)
         mdae = median_absolute_error(ggt, ppd)
@@ -2389,13 +2393,13 @@ class Solver(object):
         print('median abs error', mdae)
         print('mae', mae)
         print('r2', r2_score(ggt, ppd))
-        plot_scatter(ggt, ppd, 'Predicted biomass vs. target (unit = Mg C /ha)', 'Reference AGB (Mg/ha)',
-             'Predicted AGB (Mg/ha)'
-             ,550, font = 35, spinexy = 0, markersize = 30, xtic = 1, showr2 = 1, showfit = 0)
-
-        plot_scatter(ggt, ppd, '', '',
-          ''
-          ,500, alpha = 0.7, font = 40, spinexy = 0, markersize = 50, xtic = 1, showr2 = 1, showfit = 0)
+        # plot_scatter(ggt, ppd, 'Predicted biomass vs. target (unit = Mg C /ha)', 'Reference AGB (Mg/ha)',
+        #      'Predicted AGB (Mg/ha)'
+        #      ,550, font = 35, spinexy = 0, markersize = 30, xtic = 1, showr2 = 1, showfit = 0)
+        #
+        # plot_scatter(ggt, ppd, '', '',
+        #   ''
+        #   ,500, alpha = 0.7, font = 40, spinexy = 0, markersize = 50, xtic = 1, showr2 = 1, showfit = 0)
 
 
         if self.config.mode == 'bias_test':
@@ -2417,15 +2421,15 @@ class Solver(object):
             ppd_b_2 = ppd_b[ggt!=0]
 
 
-            plot_scatter(ggt, ppd_b, 'Predicted biomass vs. target (unit = Mg C /ha)', 'Reference AGB (Mg/ha)',
-                 'Predicted AGB (Mg/ha)'
-                 ,550, font = 35, spinexy = 0, markersize = 30, xtic = 1, showr2 = 1, showfit = 0)
+            # plot_scatter(ggt, ppd_b, 'Predicted biomass vs. target (unit = Mg C /ha)', 'Reference AGB (Mg/ha)',
+            #      'Predicted AGB (Mg/ha)'
+            #      ,550, font = 35, spinexy = 0, markersize = 30, xtic = 1, showr2 = 1, showfit = 0)
 
             plot_scatter(ggt, ppd_b, '', '',
               ''
-              ,500, alpha = 0.7, font = 40, spinexy = 0, markersize = 50, xtic = 1, showr2 = 1, showfit = 0)
+              ,500, alpha = 0.7, font = 40, spinexy = 0, markersize = 200, xtic = 1, showr2 = 1, showfit = 0)
 
-
+            print('number of samples', len(ggt))
             print('smape %error after correction', smape(ggt_2,ppd_b_2))
             print('mape %error after correction', mean_absolute_percentage_error(ggt_2,ppd_b_2))
             # from sklearn.metrics import mean_absolute_percentage_error
@@ -2460,6 +2464,258 @@ class Solver(object):
                 return ppd, gtt, gtts, preds, mae, r2_score(ggt, ppd), mean_squared_error(ggt, ppd, squared=False), rte*100, filen_list
             else:
                 return ppd, gtt, gtts, preds, mae, r2_score(ggt, ppd), mean_squared_error(ggt, ppd, squared=False), rte*100
+
+    def uncertainty_test(self, n_passes = 100):
+        self.load_model_for_test()
+        enable_dropout(self.nnet) # MC dropout
+
+        lb_list = []
+        pd_list = []
+        pd_list_lp = []
+        images_list = []
+
+        if self.config.test_vis:
+            filen_list = []
+        # mc dropout loop
+        for lp in range(n_passes):
+            torch.manual_seed(2*lp)
+            np.random.seed(2*lp)
+            with torch.no_grad():
+                for i, data in enumerate(self.test_loader):
+
+                    if self.conf_score:
+                        # if self.config.test_vis:
+                        #     images, GT, sp_wei, filen = data
+                        if self.config.add_activ_loss_descend or self.config.add_activ_14reso:
+                            images, GT, chm_activ, sp_wei, filen = data
+                        else:
+                            # ipdb.set_trace()
+                            images, GT, sp_wei, filen = data
+                    else:
+                        images, GT = data
+
+                    images = images.to(self.device)
+                    GT = GT.to(self.device)
+                    # import ipdb
+                    # ipdb.set_trace()
+                    if self.conf_score:
+                        sp_wei = sp_wei.to(self.device)
+
+                    # ipdb.set_trace()
+                    pred = self.nnet(images).squeeze()
+                    # ipdb.set_trace()
+                    if 'map' in self.model_type:
+                        # ipdb.set_trace()
+                        if self.config.add_activ_round_clip_pred:
+                            # clip corners to remove artificts
+                            im_length = images.shape[-1]
+                            rad = int(im_length / 2)
+                            mask0 = create_circular_mask(rad * 2, rad * 2, radius=rad).astype(np.uint8)
+                            mask0 = cv2.resize(mask0, (14, 14))
+                            if self.config.add_activ_round_clip_inner_pred:
+                                # clip more
+                                mask00 = np.zeros((16, 16))
+                                mask00[1:-1, 1:-1] = mask0
+                                mask0 = cv2.resize(mask00, (14, 14))
+                            mask = mask0 == 1
+                            pred[:, ~mask] = 0
+                        if self.config.add_activ_enforce_nonnegative:
+                            pred = torch.clamp(pred, min=0)
+
+                        if self.config.add_activ_loss_descend or self.config.add_activ_14reso:
+                            pred_activ = pred
+                            if not self.config.add_activ_flatten:
+                                if self.config.attri_label == 'h_can':
+                                    pred = pred / 104
+                                pred = torch.sum(pred, (-2, -1))
+                            else:
+                                pred = torch.sum(pred, (-1))
+                        else:
+
+                            pred = torch.sum(pred, (-1))
+
+                    GT = GT.to(torch.float32)
+                    loss = self.criterion(pred, GT)
+                    if self.conf_score:
+                        loss = torch.mean(loss * sp_wei)
+
+                    # Calculate Metrics #
+                    pred = pred.cpu().detach().numpy()
+                    GT = GT.cpu().detach().numpy()
+                    imagesnp = images.cpu().detach().numpy()
+                    if lp == 0:
+                        lb_list.extend(GT)
+                        images_list.extend(imagesnp)
+                    try:
+                        pd_list.extend(pred)
+                    except:
+                        pd_list.extend([pred.tolist()])
+
+                    if self.config.test_vis:
+                        if lp == 0:
+                            filen_list.extend(filen)
+
+            pd_list_lp.append(np.array(pd_list))
+            pd_list = []
+
+        pd_list_lp = np.array(pd_list_lp)
+        # metrics
+        mean_preds = np.mean(pd_list_lp, axis = 0)
+        uncertainties = np.std(pd_list_lp, axis = 0)
+        ggts = np.array(lb_list)
+        r2 = r2_score(ggts, mean_preds)
+        mae = mean_absolute_error(ggts, mean_preds)
+        rmae = mae/ggts.mean()
+
+        # uncertainty metrics
+        mean_uncertainty = np.mean(uncertainties)
+        uncertainty_25th = np.percentile(uncertainties, 25)
+        uncertainty_50th = np.percentile(uncertainties, 50)  # Median
+        uncertainty_75th = np.percentile(uncertainties, 75)
+
+        print('---------mean prediction metrics---------')
+        print('r2', r2)
+        print('mae', mae)
+        print('rmae', rmae)
+
+        print('--------uncertainty metrics (absolute uncertainty) --------')
+        print('mean uncertainty', mean_uncertainty)
+        print('uncertainty 25th', uncertainty_25th)
+        print('uncertainty 50th', uncertainty_50th)
+        print('uncertainty 75th', uncertainty_75th)
+
+        print('mean ground truth', ggts.mean())
+
+
+        relative_un = uncertainties/(ggts+1)
+        # relative absolute error
+        relative_abs_error = np.abs(mean_preds - ggts)/(ggts+1)
+
+        # relative uncertainty to true value, filter out very small values (smaller than 1)
+        mask_filter = ggts > 1
+        filter_ggts = ggts[mask_filter]
+        filter_uncertainties = relative_un[mask_filter]
+        filter_errors = relative_abs_error[mask_filter]
+
+
+        print('--------uncertainty metrics (relative uncertainty to true value (sample level) - mangitude of uncertainty in proportion to target) --------')
+        print('mean relative uncertainty', np.mean(relative_un))
+        print('uncertainty 25th', np.percentile(relative_un, 25))
+        print('uncertainty 50th', np.percentile(relative_un, 50))
+        print('uncertainty 75th', np.percentile(relative_un, 75))
+
+        print('---uncertainty relative to population mean', mean_uncertainty/np.mean(ggts))
+
+        # spearman correlation: Spearman's rank correlation coefficient, It assesses how well the relationship between two variables can be described using a monotonic function.
+        from scipy.stats import spearmanr
+        correlation = spearmanr(uncertainties, np.abs(mean_preds - ggts))
+        print('----spearman correlation between uncertainty and absolute error is ', correlation)
+        # report other numbers of spaearman
+        print('Number of samples', len(uncertainties))
+        correlation2 = spearmanr(relative_un, relative_abs_error)
+        print('----spearman correlation between relative uncertainty and relative absolute error is ', correlation2)
+
+
+        # # calibration of uncertainty
+        # from scipy.stats import pearsonr
+        # absolute_errors = np.abs(mean_preds - ggts)
+        # calibration = pearsonr(uncertainties, absolute_errors)
+        # print('----correlation between uncertainty and absolute error is ', calibration)
+        # # plot scatter plot comparing uncertainty and absolute error
+        # figure = plt.figure(figsize=(10, 10))
+        # plt.scatter(absolute_errors, uncertainties, color = 'mediumorchid', s= 10)
+        # plt.xlabel('Absolute error')
+        # plt.ylabel('Uncertainty')
+        # # grid
+        # plt.grid(True)
+        # # fit curve and peason r
+        # from scipy.stats import linregress
+        # slope, intercept, r_value, p_value, std_err = linregress(absolute_errors, uncertainties)
+        # plt.plot(absolute_errors, slope*absolute_errors + intercept, color = 'gold')
+        # plt.title('Uncertainty vs. Absolute error')
+        # plt.text(0.1, 0.9, 'Pearson r = %.2f'%r_value, fontsize = 12, transform=plt.gcf().transFigure)
+        # plt.show()
+        # bin uncertainty
+        # Step 3: Optional - Bin the uncertainties and calculate average errors per bin
+        # Define the number of bins (e.g., 10 bins for simplicity)
+        absolute_errors = np.abs(mean_preds - ggts)
+        def plot_uncertainty_error(unc, error):
+            num_bins = 10
+            bins = np.linspace(unc.min(), unc.max(), num_bins + 1)
+
+            binned_errors = []
+            binned_uncertainties = []
+
+            for i in range(num_bins):
+                bin_mask = (unc >= bins[i]) & (unc < bins[i + 1])
+                if bin_mask.any():
+                    binned_errors.append(np.mean(error[bin_mask]))
+                    binned_uncertainties.append(np.mean(unc[bin_mask]))
+            # plot plot comparing uncertainty and absolute error
+            # ipdb.set_trace()
+            figure = plt.figure(figsize=(10, 10))
+            plt.plot(binned_uncertainties, binned_errors, marker='o', color = 'gray', markersize = 10, linewidth = 5)
+            # plt.xlabel('Uncertainty', fontsize = 20)
+            # plt.ylabel('Mean Absolute Error', fontsize = 20)
+            # plt.grid(True)
+            # plt.title('Uncertainty vs. Mean Absolute Error')
+            # increase font size for ticks
+            plt.xticks(fontsize=25)
+            plt.yticks(fontsize=25)
+
+            plt.show()
+        # ipdb.set_trace()
+        plot_uncertainty_error(uncertainties, absolute_errors)
+        # plot_uncertainty_error(filter_uncertainties, filter_errors)
+        # # show examples of uncertainty with image
+        # # sample two image with high uncertainty
+        # high_un_idx = random.choice(np.where(uncertainties > uncertainty_75th)[0])
+        # high_un_image = images_list[high_un_idx]
+        # high_un_pred = mean_preds[high_un_idx]
+        # high_un_gt = ggts[high_un_idx]
+        # high_un_uncertainty = uncertainties[high_un_idx]
+        #
+        # # sample two image with medium uncertainty
+        # medium_un_idx = random.choice(np.where(uncertainties > uncertainty_50th)[0])
+        # medium_un_image = images_list[medium_un_idx]
+        # medium_un_pred = mean_preds[medium_un_idx]
+        # medium_un_gt = ggts[medium_un_idx]
+        # medium_un_uncertainty = uncertainties[medium_un_idx]
+        #
+        # # sample two image with low uncertainty
+        # low_un_idx = random.choice(np.where(uncertainties < uncertainty_25th)[0])
+        # low_un_image = images_list[low_un_idx]
+        # low_un_pred = mean_preds[low_un_idx]
+        # low_un_gt = ggts[low_un_idx]
+        # low_un_uncertainty = uncertainties[low_un_idx]
+        #
+        # # plot all samples with pred, gt, uncertainty
+        # # high uncertainty
+        # fig, ax = plt.subplots(1, 3, figsize=(30, 10))
+        # # load image raw
+        # high_un_image = self.config.test_path + filen_list[high_un_idx] + '.tif'
+        # im1 = rasterio.open(high_un_image)
+        # im1 = np.transpose(im1.read(), (1, 2, 0))
+        # ax[0].imshow(im1[..., :3])
+        # ax[0].set_title('uncertainty: %.2f'%high_un_uncertainty)
+        # medium_un_image = self.config.test_path + filen_list[medium_un_idx] + '.tif'
+        # im2 = rasterio.open(medium_un_image)
+        # im2 = np.transpose(im2.read(), (1, 2, 0))
+        # ax[1].imshow(im2[..., :3])
+        #
+        # ax[1].set_title('uncertainty: %.2f'%medium_un_uncertainty)
+        # low_un_image = self.config.test_path + filen_list[low_un_idx] + '.tif'
+        # im3 = rasterio.open(low_un_image)
+        # im3 = np.transpose(im3.read(), (1, 2, 0))
+        # ax[2].imshow(im3[..., :3])
+        # ax[2].set_title('uncertainty: %.2f'%low_un_uncertainty)
+        # plt.show()
+
+
+
+
+
+
 
 
 class EarlyStopper:
@@ -2645,6 +2901,7 @@ def plot_scatter(x, y, title, xlabel, ylabel, limi, spinexy = True, font = 35, m
 
     plt.xlabel(xlabel,fontsize=font)
     plt.ylabel(ylabel,fontsize=font)
+    plt.show()
 
     return
 

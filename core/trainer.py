@@ -202,6 +202,9 @@ def Trainer(config, cfg_path, showImOnly = 0, launch_wandb = 1):
                 ppd, gtt, gtts, preds, mae, r2, mse, rte, filenames = solver.test()
             else:
                 ppd, gtt, gtts, preds, mae, r2, mse, rte = solver.test()
+        elif config.mode == 'uncertainty_test':
+            solver.uncertainty_test()
+            return
         if config.mode == 'test':
             print('Checking testign data')
             images = data_vis(test_loader, config.conf_score, config.use_color, config.add_chmInput, config.add_seg, add_activ_loss_descend = max(config.add_activ_loss_descend, config.add_activ_14reso), num = 1, model = solver.nnet, devi = solver.device, test = 1, test_vis = config.test_vis)

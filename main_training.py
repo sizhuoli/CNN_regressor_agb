@@ -28,7 +28,7 @@ from omegaconf import OmegaConf
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training')
-    parser.add_argument('--head', type=str, default='A', help='head type: A (dense) or B (map)')
+    parser.add_argument('--head', type=str, default='B', help='head type: A (dense) or B (map)')
 
     args = parser.parse_args()
     print('head design', args.head)

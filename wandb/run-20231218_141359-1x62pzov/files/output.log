@@ -1,0 +1,41 @@
+
+[34m[1mwandb[39m[22m: [33mWARNING[39m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+Epoch [1/300] Epo time [29.81] Itr time [0.50] - Training, Loss: 69.0858, MAE: 67.7391, RMSE: 91.6842, MAPE: 2047.2715, R^2: 0.2233, sampleWeight: 0.7889
+activation map value range:  0.0 3.8302088
+Decay learning rate to 0.0005.
+Epoch [1/300] Epo time [1.91] Itr time [0.21] - Validation, Loss: 54.6399, MAE: 53.6983, RMSE: 72.5934, MAPE: 230.4538, R^2: 0.4435, sampleWeight: 0.7667
+activation map value range:  0.0 4.2573695
+==========================================================
+Best torchEfficientnetb0_map model score: Loss = 54.6399
+==========================================================
+Best torchEfficientnetb0_map model score: R2 = 0.4435
+Traceback (most recent call last):
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/main_training.py", line 44, in <module>
+    Trainer(conf, cfg, showImOnly =0, launch_wandb = 1)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/trainer.py", line 186, in Trainer
+    solver.train()
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1739, in train
+    losses, met1, met2 = self.train_epoch(epoch, lr)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 811, in train_epoch
+    for i, data in enumerate(self.train_loader):
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 681, in __next__
+    data = self._next_data()
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 721, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 49, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 49, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/data_loader_biomass.py", line 652, in __getitem__
+    image_crop = Transform(image_crop)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torchvision/transforms/transforms.py", line 94, in __call__
+    img = t(img)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torchvision/transforms/transforms.py", line 269, in forward
+    return F.normalize(tensor, self.mean, self.std, self.inplace)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torchvision/transforms/functional.py", line 360, in normalize
+    return F_t.normalize(tensor, mean=mean, std=std, inplace=inplace)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torchvision/transforms/functional_tensor.py", line 959, in normalize
+    tensor.sub_(mean).div_(std)
+KeyboardInterrupt

@@ -1,0 +1,32 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.18
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.9.13
+    start_time: 1733492518
+    t:
+      1:
+      - 1
+      - 5
+      - 41
+      - 53
+      - 55
+      3:
+      - 13
+      - 15
+      - 16
+      4: 3.9.13
+      5: 0.12.18
+      8:
+      - 5
+commit:
+  desc: null
+  value: 76ced53a2aa71d98b845a9d5322a302cd4b6ef88
+run_path:
+  desc: null
+  value: /home/sizhuo/Desktop/code_repository/CNN_regressor_agb

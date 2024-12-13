@@ -20,7 +20,7 @@ attri_id: psussu
 attri_label: BMag_ha
 attri_year: year
 augmentation_prob: 0
-batch_size: 32
+batch_size: 16
 beta1: 0.5
 beta2: 0.999
 checkpoint_dir: ./checkpoints
@@ -57,10 +57,10 @@ num_epochs: 0
 meanstdnorm: 0
 mergeTrainValid: 0
 min_lr: 1.0e-05
-mode: bias_test
-model_path: # modelpath
+mode: uncertainty_test
+model_path:
 model_suf:
-model_type: torchEfficientnetb0_map
+model_type: regnetY800MF_dense
 nir_rep_red: 0
 norm_wei: 1
 num_workers: 12
@@ -73,7 +73,7 @@ resume_train: 0
 rgb2gray: 0
 saveImages: 0
 score_name: score
-showmap: 1
+showmap: 0
 subsample_data: 0
 subsample_data_rat: 0
 t: 3
@@ -85,7 +85,7 @@ test_forestOnly: 1
 test_forestThres: 0.8
 test_path: /home/sizhuo/Desktop/code_repository/CNN_AGB/dataset/test2/
 test_seg_path: ''
-test_type_col: SPEC_TYPE
+test_type_col: forest_type
 test_type_name:
 test_type_separate: 0
 test_vis: 1

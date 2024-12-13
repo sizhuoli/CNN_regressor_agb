@@ -129,9 +129,9 @@ class ImageFolder(data.Dataset):
         radius = int(self.config.croplength/2)
         self.mask = create_circular_mask(radius*2, radius*2, radius=radius)
 
-        print('normalize input------')
-        print('imageNet norm: ', self.config.imageNetnorm)
-        print('meanstd norm: ', self.config.meanstdnorm)
+        # print('normalize input------')
+        # print('imageNet norm: ', self.config.imageNetnorm)
+        # print('meanstd norm: ', self.config.meanstdnorm)
 
         print('===========================================Loading dataset 1 (original data)============================================')
         if self.config.add_chmInput or self.config.add_activ_loss_descend or self.config.add_activ_14reso:
@@ -304,6 +304,7 @@ class ImageFolder(data.Dataset):
         else:
             print('===========0-0=============Loaded 1 dataset=========0-0===;-)===========')
 
+        print('Dataset: ', self.mode)
         print('Total count of images: ', len(self.image_paths))
         # print(self.image_paths)
 

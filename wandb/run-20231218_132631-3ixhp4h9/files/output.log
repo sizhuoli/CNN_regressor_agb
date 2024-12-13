@@ -1,0 +1,39 @@
+
+[34m[1mwandb[39m[22m: [33mWARNING[39m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+Epoch [1/300] Epo time [30.19] Itr time [0.50] - Training, Loss: 129.7482, MAE: 116.9462, RMSE: 157.5414, MAPE: 151.2508, R^2: -1.2742, sampleWeight: 0.8333
+Decay learning rate to 0.0005.
+Epoch [1/300] Epo time [1.47] Itr time [0.16] - Validation, Loss: 120.3464, MAE: 105.1802, RMSE: 142.3196, MAPE: 106.7505, R^2: -1.3271, sampleWeight: 0.7000
+==========================================================
+Best torchEfficientnetb1_dense model score: Loss = 120.3464
+==========================================================
+Best torchEfficientnetb1_dense model score: R2 = -1.3271
+Epoch [2/300] Epo time [28.66] Itr time [0.48] - Training, Loss: 91.0824, MAE: 84.1505, RMSE: 117.6389, MAPE: 1220.9296, R^2: -0.3396, sampleWeight: 0.8333
+Epoch [2/300] Epo time [1.39] Itr time [0.15] - Validation, Loss: 64.8582, MAE: 62.6356, RMSE: 83.5105, MAPE: 413.0963, R^2: 0.2148, sampleWeight: 0.6667
+==========================================================
+Best torchEfficientnetb1_dense model score: Loss = 64.8582
+==========================================================
+Best torchEfficientnetb1_dense model score: R2 = 0.2148
+Traceback (most recent call last):
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/main_training.py", line 38, in <module>
+    Trainer(conf, cfg, showImOnly =0, launch_wandb = 1)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/trainer.py", line 210, in Trainer
+    solver.train()
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1832, in train
+    losses, met1, met2 = self.train_epoch(epoch, lr)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 898, in train_epoch
+    for i, data in enumerate(self.train_loader):
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 681, in __next__
+    data = self._next_data()
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 721, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 49, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 49, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/data_loader_biomass.py", line 571, in __getitem__
+    image_crop = ndimage.rotate(image_crop, rot_deg, reshape=False)
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/scipy/ndimage/interpolation.py", line 955, in rotate
+    affine_transform(ia, rot_matrix, offset, out_plane_shape,
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/site-packages/scipy/ndimage/interpolation.py", line 611, in affine_transform
+    _nd_image.geometric_transform(filtered, None, None, matrix, offset,
+KeyboardInterrupt

@@ -1,0 +1,20 @@
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_setup.py:_flush():76] Loading settings from /home/sizhuo/.config/wandb/settings
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_setup.py:_flush():76] Loading settings from /home/sizhuo/Desktop/code_repository/CNN_regressor_agb/wandb/settings
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'main_training.py', 'program': '/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/main_training.py'}
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_init.py:_log_setup():428] Logging user logs to /home/sizhuo/Desktop/code_repository/CNN_regressor_agb/wandb/run-20241206_145326-3feu4xhf/logs/debug.log
+2024-12-06 14:53:26,841 INFO    MainThread:1632418 [wandb_init.py:_log_setup():429] Logging internal logs to /home/sizhuo/Desktop/code_repository/CNN_regressor_agb/wandb/run-20241206_145326-3feu4xhf/logs/debug-internal.log
+2024-12-06 14:53:26,842 INFO    MainThread:1632418 [wandb_init.py:init():462] calling init triggers
+2024-12-06 14:53:26,842 INFO    MainThread:1632418 [wandb_init.py:init():465] wandb.init called with sweep_config: {}
+config: {'run_path': '/home/sizhuo/Desktop/code_repository/CNN_regressor_agb', 'commit': '76ced53a2aa71d98b845a9d5322a302cd4b6ef88'}
+2024-12-06 14:53:26,842 INFO    MainThread:1632418 [wandb_init.py:init():515] starting backend
+2024-12-06 14:53:26,842 INFO    MainThread:1632418 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-12-06 14:53:26,917 INFO    MainThread:1632418 [backend.py:ensure_launched():217] starting backend process...
+2024-12-06 14:53:26,977 INFO    MainThread:1632418 [backend.py:ensure_launched():222] started backend process with pid: 1632529
+2024-12-06 14:53:26,979 INFO    MainThread:1632418 [wandb_init.py:init():525] backend started and connected
+2024-12-06 14:53:26,986 INFO    MainThread:1632418 [wandb_init.py:init():596] updated telemetry
+2024-12-06 14:53:27,134 INFO    MainThread:1632418 [wandb_init.py:init():627] communicating run to backend with 30 second timeout
+2024-12-06 14:53:28,141 INFO    MainThread:1632418 [wandb_run.py:_on_init():1924] communicating current version
+2024-12-06 14:53:28,234 INFO    MainThread:1632418 [wandb_run.py:_on_init():1928] got version response upgrade_message: "wandb version 0.19.0 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-12-06 14:53:28,235 INFO    MainThread:1632418 [wandb_init.py:init():662] starting run threads in backend

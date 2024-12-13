@@ -1,0 +1,11 @@
+[34m[1mwandb[39m[22m: [33mWARNING[39m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+Traceback (most recent call last):
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/main_training.py", line 38, in <module>
+    Trainer(conf, cfg, showImOnly =0, launch_wandb = 1)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/trainer.py", line 188, in Trainer
+    solver.train()
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1745, in train
+    losses, met1, met2 = self.train_epoch(epoch, lr)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 868, in train_epoch
+    pred[:, ~mask] = 0
+IndexError: The shape of the mask [14, 14] at index 0 does not match the shape of the indexed tensor [32, 49] at index 1

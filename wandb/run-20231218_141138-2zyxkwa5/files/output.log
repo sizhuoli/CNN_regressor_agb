@@ -1,0 +1,21 @@
+
+[34m[1mwandb[39m[22m: [33mWARNING[39m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+Traceback (most recent call last):
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/main_training.py", line 44, in <module>
+    Trainer(conf, cfg, showImOnly =0, launch_wandb = 1)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/trainer.py", line 186, in Trainer
+    solver.train()
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1743, in train
+    losses, met1, met2 = self.train_epoch(epoch, lr)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1102, in train_epoch
+    self.finalize_epoch(epoch, losses.avg, rmse.avg, r2.avg)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/core/solver_new.py", line 1661, in finalize_epoch
+    Wandb.add_file(self._checkpoint.checkpoint_path)
+  File "/home/sizhuo/Desktop/code_repository/CNN_regressor_agb/utils/wandb_utils.py", line 94, in add_file
+    shutil.copyfile(file_path, os.path.join(wandb.run.dir, filename))
+  File "/home/sizhuo/anaconda3/envs/torchnew4/lib/python3.9/shutil.py", line 264, in copyfile
+    with open(src, 'rb') as fsrc:
+FileNotFoundError: [Errno 2] No such file or directory: 'torchEfficientnetb0_map.pt'
+Epoch [1/300] Epo time [28.73] Itr time [0.48] - Training, Loss: 70.3940, MAE: 68.3597, RMSE: 94.1389, MAPE: 2512.5156, R^2: 0.1726, sampleWeight: 0.7667
+activation map value range:  0.0 3.9938953
+Decay learning rate to 0.0005.
