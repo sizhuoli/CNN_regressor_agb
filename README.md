@@ -1,9 +1,9 @@
-##  Image-patch-level regression
-### A CNN model for forest biomass estimation from sub-meter resolution images
+##  Image-patch-level regression: A CNN model for forest biomass estimation from sub-meter resolution images
 
 ## Publication
 
 Deep learning tree and forest biomass from sub-meter resolution optical imagery
+
 Remote Sensing of Environment, Volume 345, 2026.
 
 Sizhuo Li, Martin Brandt, Xiaoye Tong, Stefan Oehmcke, Christian Igel, Florian Reiner, Fabian Gieseke, Thomas Nord-Larsen, Rasmus Fensholt, Jerome Chave, Philippe Ciais.
