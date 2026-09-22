@@ -1,5 +1,6 @@
 #  Image-patch-level regression
-## A CNN model for forest biomass estimation from sub-meter resolution images
+
+A CNN model for forest biomass estimation from sub-meter resolution images
 
 ## Publication
 
